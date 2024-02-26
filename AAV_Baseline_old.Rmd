@@ -1,0 +1,150 @@
+---
+fontsize: 12pt
+geometry: margin=0.50in
+subparagraph: yes
+params:
+    title: "title"
+    date: "0000-00-00"
+    sampleTable: "test"
+    boolean_percent: "test"
+title: "`r params$title`"
+date:  "`r params$date`"
+output: 
+  pdf_document:
+    toc: true
+    keep_tex: no
+    latex_engine: xelatex
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(vegan)
+library(knitr)
+library(xtable)
+library(ggforce)
+library(gridExtra)
+library(RColorBrewer)
+library(grDevices)
+library(wordcloud)
+library(png)
+library(grid)
+library(pander)
+library(tidyverse)
+library(kableExtra)
+options(stringsAsFactors = FALSE)
+
+englishList <- function(v, conjunction = 'and'){
+  if(length(v) == 1) return(v)
+  if(length(v) == 2) return(paste(v, collapse = paste0(' ', conjunction, ' '))) 
+  paste0(paste0(v[1:length(v)-1], collapse = ', '), paste0(' ', conjunction, ' '), v[length(v)])
+}
+ppNum <- function(n){ if(is.na(n)) return('na'); format(n, big.mark=",", scientific=FALSE, trim=TRUE) }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Introduction
+
+## Data Summary
+This is where a paragraph about the data we recieve will go. This still needs to be updated such that it can
+automatically pull in the paragraph given to us, rather than it being manually written here. I will get back to this at some point,
+for now I am focusing on the main meat of the project.
+
+Bogus control - 
+Positive control - 
+
+## Introduction
+This is where I am going to write a brief summary about what this report is going to do. The main purpose of this report is to have an
+easily-accessible version of the AAvenger data which can be repeatably-produced and can be distributed to collaborators. The main points here
+are that the AAvenger version info is recorded in this report along with the date, and the data information/data file.
+
+
+\newpage
+
+# Sample Summary
+This is just an exmaple, but for now I am outputting a table that is from the AAvenger output anchoReadRearrangements. Later down the line
+we can change this if this isn't what we want, it's just an example.
+
+Columns inidicate the following: Trial is the trial for which this data was collected. Subject is the treatment or condition. Sample is the GTSP number. UMIs, otherwise known as Unique Molecular Identifiers are a method of quantifying unique DNA samples. More UMIs indicates more unique DNA pieces. Sites is a measure of how many integrations sites are found for a certain condition. Finally, UMIs Rearranged (%) is a measure of the percentage of UMIs which are rearranged. 
+
+
+```{r example, echo=FALSE}
+SampleTable <- 
+  dplyr::arrange(sampleTable, subject) %>%
+  dplyr::rename('UMIs Rearranged (%)' = percentUMIsRearranged) %>%
+  data.frame(check.names = FALSE)
+
+knitr::kable(SampleTable, "simple", align = 'lllcccc') #%>%
+```
+
+\newpage
+# Rearrangement Percent
+
+## Boolean Rearrangements
+length is the total length of DNA sequences. Breaks is the number of breaks found total for each condition. 
+Weighted rearrangements is a measure of rearrangements per length with the number of rearrangements per sequence being taken into account. Boolean rearrangements, on the other hand, only counts whether or not something was rearranged, not the total number of rearrangements
+
+## Summary Table
+```{r echo=FALSE}
+boolean_percent <- boolean_percent %>%
+  dplyr::rename("Weighted Rearrangements/Sequences (%)" = percent_number) %>%
+  dplyr::rename("Boolean Rearrangements/Sequences (%)" = percent_boolean_number)
+
+length_percent <- dplyr::select(boolean_percent, subject, 'Weighted Rearrangements/Length (%)', 'Boolean Rearrangements/Length (%)')
+number_percent <- dplyr::select(boolean_percent, subject, "Weighted Rearrangements/Sequences (%)", "Boolean Rearrangements/Sequences (%)")
+summary <- dplyr::select(boolean_percent, subject, sample, length, breaks)
+
+knitr::kable(summary, "simple")
+```
+
+## Rearrangements per Length Table
+
+```{r echo=FALSE}
+knitr::kable(length_percent, "simple")
+```
+
+ \newpage
+ 
+## Rearrangements per Samples Table
+
+```{r echo=FALSE}
+knitr::kable(number_percent, "simple")
+```
+
+## Boolean Percent Graph
+
+```{r echo=FALSE}
+knitr::include_graphics("HelaTopo/boolean_graph.png")
+```
+ \newpage
+ 
+# Remnant Plots
+Remnant plots are a visual representation of integration by location. The arrow indicates where are read begins, with everything in the direction of the arrow having been sequenced. Integrations are marked by green bars, with colors at the bottom indicating the number of rearrangements. Sites for each condition are listed in the title.
+
+Dotted lines indicate the AAV ITRs (inverted terminal repeats).
+
+```{r echo=FALSE, out.width = "50%"}
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~AAV_GFP_Hela_Etoposide_1~GTSP5339.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~AAV_GFP_Hela_Etoposide_2~GTSP5340.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~AAV_GFP_Hela_Etoposide_4~GTSP5342.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~BogusControl~AAVBogusControl_230119.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~pAAV_GFP_Hela_Doxorubicin_1~GTSP5335.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~pAAV_GFP_Hela_Doxorubicin_2~GTSP5336.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~pAAV_GFP_Hela_Doxorubicin_3~GTSP5337.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~pAAV_GFP_Hela_Doxorubicin_4~GTSP5338.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~pAAV_GFP_Hela_NDC_3~GTSP5333.png")
+knitr::include_graphics("HeLa_Topo_T1/buildAAVremnantPlots/AAVHelaTopo~PosControl~AAVPosControl_230119.png")
+```
+
+\newpage
+
+# Methods
+Report Generated on: ```r params$date```
+
+AAvenger Version: 1.02
+
+Data Version: HeLa Topo First Attempt - Aradhana
+
