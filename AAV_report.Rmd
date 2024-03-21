@@ -1,0 +1,102 @@
+---
+fontsize: 12pt
+geometry: margin=0.50in
+subparagraph: yes
+params:
+    title: "title"
+    date: "0000-00-00"
+title: "`r params$title`"
+date:  "`r params$date`"
+header-includes:
+   - \usepackage{makecell}
+   - \usepackage{booktabs}
+   - \usepackage{amsmath}
+output: 
+  pdf_document:
+    toc: true
+    keep_tex: no
+    latex_engine: xelatex
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#library(vegan)
+library(knitr)
+#library(xtable)
+#library(gridExtra)
+library(RColorBrewer)
+#library(grDevices)
+#library(grid)
+library(dplyr)
+#library(kableExtra)
+options(stringsAsFactors = FALSE)
+options(tinytex.tlmgr_update = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Introduction
+
+The attached report describes results of analysis of integration site distributions and relative abundance for samples from gene therapy trials.
+
+# Sample Summary
+
+pull info from gtsp database for summary table.
+
+# Sequencing and Integration Summary Table
+
+Presented below are summary details of each sample. The Unique Molecular Identifiers (UMIs) estimate the number of unique molecules queried. Unique Sites refers to the number of unique integration sites detected. Chao1 estimates the total population sizes of integration sites in the sample.
+
+Prelimary work with negative controls support the use of a filtering parameter in such that sites only supported by one read are considered artifactual and removed.
+
+```{r summaryTable, echo=FALSE}
+if(nrow(summary) > 0) {
+  kable(summary, "latex",  linesep = "", booktabs = T)
+} else {
+  print("error making summary table")
+}
+```
+
+\newpage
+
+# Abundance Frequency Plots
+
+\newpage
+
+# AAV ITR Breakpoint Plots
+
+These plots are a visual representation of the ITR integration breakpoint. The x-axis indicates the point of departure from the expected ITR, where zero refers to the annotated start of the D-region. The arrow indicates the location within the ITR of the sequencing primer and the dotted lines indicate the tips of the B and C dumbells. Colors indicate the number of rearrangements in the ITR remnant.
+
+```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=10}
+ 
+for (i in remnant.plot){ 
+  print(i)
+}
+
+```
+
+\newpage
+
+# Heatmap for gene/exon
+
+```{r hmTable, echo=FALSE}
+if(nrow(hm) > 0) {
+  kable(hm, "latex",  linesep = "", booktabs = T)
+} else {
+  print("error making heatmap table")
+}
+```
+\newpage
+
+# Methods
+
+Report Generated on: `r params$date` \newline AAVenger Version: 1.1 \newline 
+\newline 
+Modules Called: 
+
+* core.R  
+* mapSiteLeaderSequences.R  
+* buildAAVremnantPlots.R  
+* anchorReadRearrangements.R
+
+
