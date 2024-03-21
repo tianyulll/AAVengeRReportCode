@@ -17,6 +17,7 @@ args <- parser$parse_args()
 
 # Read inputs
 df <- readRDS("DeJongMice.rds")
+#df <- readRDS(args$input)
 
 # Run a summary
 # Maybe include abundance?
@@ -28,6 +29,16 @@ summary <- df %>%
             "Unique Sites" = sum(count), "inferred cell" = sum(sonicLengths)) %>%
   mutate("Chao1" = vegan::estimateR(unlist(ChaoLengths))["S.chao1"]) %>%
   select(- ChaoLengths)
+
+# Create abundance plot
+abundance <- df %>%
+  select(sample, sonicLengths, nearestGene, posid) %>%
+  mutate(abundantCloneName = paste0(nearestGene, "~",posid)) %>% 
+  select(-nearestGene, -posid) %>%
+  group_by(sample) %>%
+  mutate(totalClone = sum(sonicLengths)) %>%
+  top_n(10, sonicLengths) %>%
+  mutate(sonicPercent = sonicLengths / totalClone)
 
 # Create ITR remnant plots
 plotRemnant <- function(df, outDir){
@@ -81,13 +92,13 @@ plotRemnant <- function(df, outDir){
   return(x)
 }
 
-remnant.plot <- plotRemnant(df, paste0(args$outputDir, "/","reportPlots/remnantPlots"))
+remnant.plot <- plotRemnant(df, paste0(args$outputDir, "/reportPlots/remnantPlots"))
 
-#
-hm <- df %>% 
+# Create Gene distribution df
+gene.dist <- df %>% 
   select(sample, inGene, inExon) %>%
   group_by(sample) %>%
-  mutate(ExonPer = mean(inExon)*100, GenePer = mean(inGene)*100) %>%
+  mutate("In Exon %" = mean(inExon)*100, "In Gene %" = mean(inGene)*100) %>%
   select(-inGene, -inExon) %>%
   unique()
 

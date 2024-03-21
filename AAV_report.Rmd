@@ -13,21 +13,23 @@ header-includes:
    - \usepackage{amsmath}
 output: 
   pdf_document:
+    fig_caption: yes
     toc: true
     keep_tex: no
     latex_engine: xelatex
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-#library(vegan)
 library(knitr)
+library(RColorBrewer)
+library(dplyr)
+library(kableExtra)
+
+#library(vegan)
 #library(xtable)
 #library(gridExtra)
-library(RColorBrewer)
 #library(grDevices)
 #library(grid)
-library(dplyr)
-#library(kableExtra)
 options(stringsAsFactors = FALSE)
 options(tinytex.tlmgr_update = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
@@ -51,7 +53,8 @@ Prelimary work with negative controls support the use of a filtering parameter i
 
 ```{r summaryTable, echo=FALSE}
 if(nrow(summary) > 0) {
-  kable(summary, "latex",  linesep = "", booktabs = T)
+  kable(summary, "latex",  linesep = "", booktabs = T, caption = "integration summary table") %>%
+    kable_styling(latex_options = "hold_position")
 } else {
   print("error making summary table")
 }
@@ -60,6 +63,9 @@ if(nrow(summary) > 0) {
 \newpage
 
 # Abundance Frequency Plots
+
+Abundance 
+
 
 \newpage
 
@@ -77,15 +83,38 @@ for (i in remnant.plot){
 
 \newpage
 
-# Heatmap for gene/exon
+# Gene distribution dot plots
 
-```{r hmTable, echo=FALSE}
-if(nrow(hm) > 0) {
-  kable(hm, "latex",  linesep = "", booktabs = T)
+Gene distribution for integration sites.
+
+```{r geneTable, echo=FALSE}
+if(nrow(gene.dist) > 0) {
+  kable(gene.dist, "latex", linesep = "", booktabs = T, align = "c", 
+        caption = "gene distribution percentage table") %>%
+  kable_styling(latex_options = "hold_position")
 } else {
-  print("error making heatmap table")
+  print("error making gene distribution table")
 }
 ```
+
+
+```{r genePlot, echo=FALSE, fig.width=9, fig.cap="gene distribution scatter plot"}
+
+ggplot(gene.dist, aes(y = sample)) +
+  geom_point(aes(x = `In Exon %`, shape = "exon"), alpha = 0.8) +    
+  geom_point(aes(x = `In Gene %`, shape = "gene"), alpha = 0.8, size = 2) + 
+  scale_shape_manual(values = c(16, 2), labels = c("exon", "gene"), name = NULL) + # Label legend, Remove legend title
+  labs(title = "", x = "") + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  theme(#plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        axis.text = element_text(size = 10),                  
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),                   
+        axis.line = element_line(linewidth = 0.5),
+        legend.position = "right")
+
+```
+
 \newpage
 
 # Methods
