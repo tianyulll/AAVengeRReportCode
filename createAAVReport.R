@@ -33,12 +33,37 @@ summary <- df %>%
 # Create abundance plot
 abundance <- df %>%
   select(sample, sonicLengths, nearestGene, posid) %>%
-  mutate(abundantCloneName = paste0(nearestGene, "~",posid)) %>% 
+  mutate(abundantCloneName = paste0(posid, "\n", nearestGene, ":", sonicLengths)) %>% 
   select(-nearestGene, -posid) %>%
   group_by(sample) %>%
   mutate(totalClone = sum(sonicLengths)) %>%
-  top_n(10, sonicLengths) %>%
+  slice_max(order_by = sonicLengths, n = 10, with_ties = F) %>%
   mutate(sonicPercent = sonicLengths / totalClone)
+
+abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
+  
+  # add low abundance
+  tmpRow <- tibble(sample = tmp$sample[1], sonicLengths = tmp$totalClone[1] - sum(tmp$sonicLengths),
+                   abundantCloneName = "low", 
+                   sonicPercent = (tmp$totalClone[1] - sum(tmp$sonicLengths)) / tmp$totalClone[1])
+  tmp <- bind_rows(tmpRow, tmp)
+  # order by abundance
+  tmp2 <- subset(tmp, abundantCloneName != "low")
+  tmp2 <- tmp2[order(tmp2$sonicPercent, decreasing = TRUE),]
+  tmp$abundantCloneName <- factor(tmp$abundantCloneName, 
+                                  levels = c("low", unique(tmp2$abundantCloneName)))
+  
+  ggplot(tmp, aes(x = sample, y = sonicPercent, fill = abundantCloneName), ) +
+    geom_bar(stat = "identity") +
+    scale_fill_manual(values = c('#eeeeee', brewer.pal(10, "Set3"))) +
+    scale_y_continuous(labels = scales::percent) +
+    #geom_text(aes(label = sonicLengths), position = position_stack(vjust = 0.5),size = 3) +
+    theme(panel.background = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.text = element_text(size = 8),
+          legend.title = element_blank())
+})
 
 # Create ITR remnant plots
 plotRemnant <- function(df, outDir){
@@ -73,8 +98,8 @@ plotRemnant <- function(df, outDir){
                          limits = c(buildAAVremnantPlots_NTbinSize, 
                                     cut(buildAAVremnantPlots_ITRlength, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2))) +
       scale_y_continuous(limits = c(0, NA), expand = c(0, 0)) + 
-      geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip1, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
-      geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip2, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
+      #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip1, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
+      #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip2, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
       ggtitle(paste0(x$subject[1], ' | ', x$sample[1], ' | ', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
       labs(x = 'ITR position', y = 'Integrations') +
       guides(fill=guide_legend(nrow = 1, byrow = TRUE, reverse = TRUE)) +
@@ -86,6 +111,7 @@ plotRemnant <- function(df, outDir){
       geom_point(data = tibble(x = cut(buildAAVremnantPlots_ITRseqStart, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2)), aes(x, 0), 
                  size = 7, shape="\u27A1", inherit.aes = FALSE) +
       coord_cartesian(clip = "off")
+    
     ggsave(file.path(outDir, paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), p, dpi = 300, width = buildAAVremnantPlots_plotOutputWidthInches, units = 'in')
     p    
   })

@@ -66,6 +66,14 @@ if(nrow(summary) > 0) {
 
 Abundance 
 
+```{r abundantPlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=4.5, fig.width=4}
+
+
+for (i in abundantPlot) {
+  print(i)
+}
+
+```
 
 \newpage
 
