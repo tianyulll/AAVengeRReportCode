@@ -13,7 +13,7 @@ Parameters:
 `--itrLength:	itr length for remnant plots`
 
 `AAV_report.rmd` The default report rmd file. \
-`dependencies.txt` A list of dependent libraries.
+`dependencies.tsv` A list of dependent libraries.
 
 
 
