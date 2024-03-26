@@ -1,5 +1,21 @@
 # AAVengeRReportCode
-This is where I store code bases related to AAVengeR outputs
+
+This tool kit generates a standarized, reproducible report from AAVengeR outputs. 
+
+Usage: `Rscript createAAVReport.R -i DeJongMice.rds -o test -r test1`
+
+Parameters: 
+
+`-i --input:	expect RDS input (required)` \
+`-o --outputDir:	directory to write outputs ` \
+`-r --reportTitle:	report title and output file title` \
+`--itrStart:	itr seq start position for remnant plot` \
+`--itrLength:	itr length for remnant plots`
+
+`AAV_report.rmd` The default report rmd file. \
+`dependencies.txt` A list of dependent libraries.
+
+
 
 The SonjaBaselines are files that were created by Sonja
 
