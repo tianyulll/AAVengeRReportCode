@@ -25,12 +25,6 @@ library(RColorBrewer)
 library(dplyr)
 library(kableExtra)
 
-#library(vegan)
-#library(xtable)
-#library(gridExtra)
-#library(grDevices)
-#library(grid)
-options(stringsAsFactors = FALSE)
 options(tinytex.tlmgr_update = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -81,7 +75,7 @@ for (i in abundantPlot) {
 
 These plots are a visual representation of the ITR integration breakpoint. The x-axis indicates the point of departure from the expected ITR, where zero refers to the annotated start of the D-region. The arrow indicates the location within the ITR of the sequencing primer and the dotted lines indicate the tips of the B and C dumbells. Colors indicate the number of rearrangements in the ITR remnant.
 
-```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=10}
+```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=10, dev='cairo_pdf'}
  
 for (i in remnant.plot){ 
   print(i)

@@ -3,24 +3,26 @@ library(ggplot2)
 library(dplyr)
 library(argparse)
 library(vegan)
-
-#library(tinytex) for latex engine
+library(RColorBrewer)
 
 # parameters
 parser <- ArgumentParser()
-#parser$add_argument("--trial", help = "Trial identifier")
-#parser$add_argument("--patient", help = "Patient identifier")
 parser$add_argument("-i", "--input", help = "input data file in RDS")
 parser$add_argument("-o" ,"--outputDir", default = "output", help = "Output directory")
-parser$add_argument("-r",  "--reportTitle", default="AAV_report", help = "file name for the report")
+parser$add_argument("-r",  "--reportTitle", default = "AAV_report", help = "file name for the report")
+parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
+parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
+parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
 args <- parser$parse_args()
 
 # Read inputs
-df <- readRDS("DeJongMice.rds")
-#df <- readRDS(args$input)
+#df <- readRDS("DeJongMice.rds")
+df <- readRDS(args$input)
+buildAAVremnantPlots_ITRlength <-  args$itrLength
+buildAAVremnantPlots_ITRseqStart <- args$itrStart
+buildAAVremnantPlots_NTbinSize <- args$ntBinSize
 
 # Run a summary
-# Maybe include abundance?
 summary <- df %>% 
   select(trial, subject, sample, sonicLengths, reads) %>%
   mutate(count = 1) %>%
@@ -31,6 +33,7 @@ summary <- df %>%
   select(- ChaoLengths)
 
 # Create abundance plot
+# with top 10 most abundant site
 abundance <- df %>%
   select(sample, sonicLengths, nearestGene, posid) %>%
   mutate(abundantCloneName = paste0(posid, "\n", nearestGene, ":", sonicLengths)) %>% 
@@ -53,27 +56,26 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   tmp$abundantCloneName <- factor(tmp$abundantCloneName, 
                                   levels = c("low", unique(tmp2$abundantCloneName)))
   
-  ggplot(tmp, aes(x = sample, y = sonicPercent, fill = abundantCloneName), ) +
-    geom_bar(stat = "identity") +
-    scale_fill_manual(values = c('#eeeeee', brewer.pal(10, "Set3"))) +
-    scale_y_continuous(labels = scales::percent) +
-    #geom_text(aes(label = sonicLengths), position = position_stack(vjust = 0.5),size = 3) +
-    theme(panel.background = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          legend.text = element_text(size = 8),
-          legend.title = element_blank())
+  p <- ggplot(tmp, aes(x = sample, y = sonicPercent, fill = abundantCloneName), ) +
+        geom_bar(stat = "identity") +
+        scale_fill_manual(values = c('#eeeeee', brewer.pal(10, "Paired"))) +
+        scale_y_continuous(labels = scales::percent) +
+        #geom_text(aes(label = sonicLengths), position = position_stack(vjust = 0.5),size = 3) +
+        theme(panel.background = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.line.y = element_line(linewidth = 0.2),
+              legend.text = element_text(size = 8),
+              legend.title = element_blank())
+  return(p)
+  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), p, dpi = 300)
 })
 
 # Create ITR remnant plots
 plotRemnant <- function(df, outDir){
-  buildAAVremnantPlots_NTbinSize <- 3
-  buildAAVremnantPlots_ITRlength <-  197
-  buildAAVremnantPlots_ITRseqStart <- 57
   buildAAVremnantPlots_ITRdumbellTip1 <- 125
   buildAAVremnantPlots_ITRdumbellTip2 <- 147
-  buildAAVremnantPlots_plotOutputWidthInches <- 10
-  
+
   x <- lapply(split(df, df$sample), function(x){
     message('sample: ', x$sample[1])
     
@@ -112,7 +114,8 @@ plotRemnant <- function(df, outDir){
                  size = 7, shape="\u27A1", inherit.aes = FALSE) +
       coord_cartesian(clip = "off")
     
-    ggsave(file.path(outDir, paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), p, dpi = 300, width = buildAAVremnantPlots_plotOutputWidthInches, units = 'in')
+    ggsave(file.path(outDir, paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), p, dpi = 300, 
+           width = 10, height = 7, units = 'in')
     p    
   })
   return(x)
@@ -130,6 +133,6 @@ gene.dist <- df %>%
 
 # Create report
 rmarkdown::render("AAV_report.Rmd",
-                  output_dir = args$outputDir,
+                  output_dir = args$outputDir, output_file = paste0(args$r, ".pdf"),
                   params = list('date'  = format(Sys.Date(), format="%B %d, %Y"),
                                 'title' = args$r))
