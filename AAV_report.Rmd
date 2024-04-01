@@ -33,17 +33,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-The attached report describes results of analysis of integration site distributions and relative abundance for samples from gene therapy trials.
-
+The attached report describes the results of integration site analysis for samples from gene therapy trials. Cellular DNA was processed as described in Sherman et al. 2017 (doi: 10.1016/j.omtm.2016.11.002.) and analyzed using the analysis software AAVengeR (https://github.com/helixscript/AAVengeR). 
 # Sample Summary
 
 pull info from gtsp database for summary table.
 
 # Sequencing and Integration Summary Table
 
-Presented below are summary details of each sample. The Unique Molecular Identifiers (UMIs) estimate the number of unique molecules queried. Unique Sites refers to the number of unique integration sites detected. Chao1 estimates the total population sizes of integration sites in the sample.
+Presented below are summary details of each sample. We estimate the number of cell clones sampled using the SonicLength method (Berry, 2012); this is summarized in the column “Inferred cells”. Relative abundance was not measured from read counts, which are known to be inaccurate, but
+from marks introduced into DNA specimens prior to PCR amplification using the SonicLength method
+PMID:22238265.
 
-Prelimary work with negative controls support the use of a filtering parameter in such that sites only supported by one read are considered artifactual and removed.
+Under most circumstances, only a subset of sites will be sampled. We thus include an estimate of sample size based on the frequency of isolation information from the SonicLength method (Berry, 2012). The ‘S.chao1’ column denotes the estimated lower bound for population size derived using Chao estimate (Chao, 1987).
 
 ```{r summaryTable, echo=FALSE}
 if(nrow(summary) > 0) {
@@ -73,7 +74,7 @@ for (i in abundantPlot) {
 
 # AAV ITR Breakpoint Plots
 
-These plots are a visual representation of the ITR integration breakpoint. The x-axis indicates the point of departure from the expected ITR, where zero refers to the annotated start of the D-region. The arrow indicates the location within the ITR of the sequencing primer and the dotted lines indicate the tips of the B and C dumbells. Colors indicate the number of rearrangements in the ITR remnant.
+These plots are a visual representation of the ITR breakpoint at the site of genomic integration. The arrow indicates the priming location within the ITR and the x-coordinate of each bar corresponds to a departure from an expected ITR sequence. Each departure from expectation is demarcated as a rearrangement, and bars are colored to reflect the frequency of rearrangement at each integration site. 
 
 ```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=10, dev='cairo_pdf'}
  
@@ -87,7 +88,7 @@ for (i in remnant.plot){
 
 # Gene distribution dot plots
 
-Gene distribution for integration sites.
+The plot below details the % of integration sites within two features, 'in genes' and 'in Exons', summarized per sample. 'in Genes' refers to sites within transcription unit boundaries and 'in Exons' refers to sites within exon boundaries. 
 
 ```{r geneTable, echo=FALSE}
 if(nrow(gene.dist) > 0) {
