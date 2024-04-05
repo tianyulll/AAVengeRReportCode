@@ -34,9 +34,10 @@ knitr::opts_chunk$set(echo = TRUE)
 # Introduction
 
 The attached report describes the results of integration site analysis for samples from gene therapy trials. Cellular DNA was processed as described in Sherman et al. 2017 (doi: 10.1016/j.omtm.2016.11.002.) and analyzed using the analysis software AAVengeR (https://github.com/helixscript/AAVengeR). 
-# Sample Summary
 
-pull info from gtsp database for summary table.
+# PI Summary
+
+Notes from PI.
 
 # Sequencing and Integration Summary Table
 
@@ -76,7 +77,7 @@ for (i in abundantPlot) {
 
 These plots are a visual representation of the ITR breakpoint at the site of genomic integration. The arrow indicates the priming location within the ITR and the x-coordinate of each bar corresponds to a departure from an expected ITR sequence. Each departure from expectation is demarcated as a rearrangement, and bars are colored to reflect the frequency of rearrangement at each integration site. 
 
-```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=10, dev='cairo_pdf'}
+```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=9.5, dev='cairo_pdf'}
  
 for (i in remnant.plot){ 
   print(i)
@@ -104,9 +105,9 @@ if(nrow(gene.dist) > 0) {
 ```{r genePlot, echo=FALSE, fig.width=9, fig.cap="gene distribution scatter plot"}
 
 ggplot(gene.dist, aes(y = sample)) +
-  geom_point(aes(x = `In Exon %`, shape = "exon"), alpha = 0.8) +    
-  geom_point(aes(x = `In Gene %`, shape = "gene"), alpha = 0.8, size = 2) + 
-  scale_shape_manual(values = c(16, 2), labels = c("exon", "gene"), name = NULL) + # Label legend, Remove legend title
+  geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
+  geom_point(aes(x = `In Transcription Unit%`, shape = "gene"), alpha = 0.8, size = 2) + 
+  scale_shape_manual(values = c(16, 2), labels = c("exon", "TranscriptionUnit"), name = NULL) + # Label legend, Remove legend title
   labs(title = "", x = "") + 
   scale_x_continuous(labels = scales::percent_format(scale = 1)) +
   theme(#plot.title = element_text(size = 16, face = "bold", hjust = 0.5),

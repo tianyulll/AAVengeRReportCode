@@ -30,18 +30,21 @@ summary <- df %>%
   summarize(ChaoLengths = list(sonicLengths),"total reads" = sum(reads), 
             "Unique Sites" = sum(count), "inferred cell" = sum(sonicLengths)) %>%
   mutate("Chao1" = vegan::estimateR(unlist(ChaoLengths))["S.chao1"]) %>%
-  select(- ChaoLengths)
+  select(- ChaoLengths) %>%
+  rename(patientID = subject)
 
 # Create abundance plot
 # with top 10 most abundant site
 abundance <- df %>%
-  select(sample, sonicLengths, nearestGene, posid) %>%
+  select(subject, sample, sonicLengths, nearestGene, posid) %>%
   mutate(abundantCloneName = paste0(posid, "\n", nearestGene, ":", sonicLengths)) %>% 
   select(-nearestGene, -posid) %>%
   group_by(sample) %>%
   mutate(totalClone = sum(sonicLengths)) %>%
   slice_max(order_by = sonicLengths, n = 10, with_ties = F) %>%
-  mutate(sonicPercent = sonicLengths / totalClone)
+  mutate(sonicPercent = sonicLengths / totalClone) %>%
+  mutate(sample = paste(subject, sample, sep = "-")) %>% 
+  select(-subject)
 
 abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   
@@ -127,7 +130,8 @@ remnant.plot <- plotRemnant(df, paste0(args$outputDir, "/reportPlots/remnantPlot
 gene.dist <- df %>% 
   select(sample, inGene, inExon) %>%
   group_by(sample) %>%
-  mutate("In Exon %" = mean(inExon)*100, "In Gene %" = mean(inGene)*100) %>%
+  mutate("In Exon%" = round(mean(inExon)*100, digits = 1), 
+         "In Transcription Unit%" = round(mean(inGene)*100, digits = 1)) %>%
   select(-inGene, -inExon) %>%
   unique()
 
