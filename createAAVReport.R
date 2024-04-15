@@ -133,7 +133,8 @@ gene.dist <- df %>%
   mutate("In Exon%" = round(mean(inExon)*100, digits = 1), 
          "In Transcription Unit%" = round(mean(inGene)*100, digits = 1)) %>%
   select(-inGene, -inExon) %>%
-  unique()
+  unique() %>%
+  arrange(sample)
 
 # Create report
 rmarkdown::render("AAV_report.Rmd",
