@@ -50,7 +50,7 @@ Under most circumstances, only a subset of sites will be sampled. We thus includ
 ```{r summaryTable, echo=FALSE}
 if(nrow(summary) > 0) {
   kable(summary, "latex",  linesep = "", booktabs = T, caption = "integration summary table") %>%
-    kable_styling(latex_options = "hold_position")
+    kable_styling(latex_options = c("hold_position", "scale_down"))
 } else {
   print("error making summary table")
 }
