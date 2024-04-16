@@ -10,7 +10,8 @@ Parameters:
 `-o --outputDir:	directory to write outputs ` \
 `-r --reportTitle:	report title and output file title` \
 `--itrStart:	itr seq start position for remnant plot` \
-`--itrLength:	itr length for remnant plots`
+`--itrLength:	itr length for remnant plots` \
+`--piNote: path to notes from pi`
 
 `AAV_report.rmd` The default report rmd file. \
 `dependencies.tsv` A list of dependent libraries.
