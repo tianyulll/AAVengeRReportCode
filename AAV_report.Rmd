@@ -24,6 +24,7 @@ library(knitr)
 library(RColorBrewer)
 library(dplyr)
 library(kableExtra)
+library(argparse)
 
 options(tinytex.tlmgr_update = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,7 +38,16 @@ The attached report describes the results of integration site analysis for sampl
 
 # PI Summary
 
-Notes from PI.
+```{r piSummary, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+if (!is.null(args$piNote)) {
+  file_content <- readLines(args$piNote)
+  cat(file_content, sep = "\n")
+} else {
+  cat("No Summary Given")
+}
+
+```
 
 # Sequencing and Integration Summary Table
 
@@ -101,17 +111,15 @@ if(nrow(gene.dist) > 0) {
 }
 ```
 
-
-```{r genePlot, echo=FALSE, fig.width=9, fig.cap="gene distribution scatter plot"}
+```{r genePlot, echo=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
 
 ggplot(gene.dist, aes(y = sample)) +
   geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
   geom_point(aes(x = `In Transcription Unit%`, shape = "gene"), alpha = 0.8, size = 2) + 
-  scale_shape_manual(values = c(16, 2), labels = c("exon", "TranscriptionUnit"), name = NULL) + # Label legend, Remove legend title
+  scale_shape_manual(values = c(16, 2), labels = c("exon", "TranscriptionUnit"), name = NULL) + 
   labs(title = "", x = "") + 
   scale_x_continuous(labels = scales::percent_format(scale = 1)) +
-  theme(#plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
-        axis.text = element_text(size = 10),                  
+  theme(axis.text = element_text(size = 10),                  
         axis.title.y = element_blank(),
         panel.grid.major = element_blank(),                   
         axis.line = element_line(linewidth = 0.5),
@@ -119,6 +127,7 @@ ggplot(gene.dist, aes(y = sample)) +
 
 ```
 
+\clearpage
 \newpage
 
 # Methods

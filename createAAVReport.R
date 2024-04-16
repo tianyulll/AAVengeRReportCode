@@ -13,10 +13,10 @@ parser$add_argument("-r",  "--reportTitle", default = "AAV_report", help = "file
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
 parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
 parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
+parser$add_argument("--piNote", help = "path to text file for summary notes")
 args <- parser$parse_args()
 
 # Read inputs
-#df <- readRDS("DeJongMice.rds")
 df <- readRDS(args$input)
 buildAAVremnantPlots_ITRlength <-  args$itrLength
 buildAAVremnantPlots_ITRseqStart <- args$itrStart
