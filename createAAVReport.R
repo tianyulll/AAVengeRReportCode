@@ -50,14 +50,14 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   
   # add low abundance
   tmpRow <- tibble(sample = tmp$sample[1], sonicLengths = tmp$totalClone[1] - sum(tmp$sonicLengths),
-                   abundantCloneName = "low", 
+                   abundantCloneName = "low abun", 
                    sonicPercent = (tmp$totalClone[1] - sum(tmp$sonicLengths)) / tmp$totalClone[1])
   tmp <- bind_rows(tmpRow, tmp)
   # order by abundance
-  tmp2 <- subset(tmp, abundantCloneName != "low")
+  tmp2 <- subset(tmp, abundantCloneName != "low abun")
   tmp2 <- tmp2[order(tmp2$sonicPercent, decreasing = TRUE),]
   tmp$abundantCloneName <- factor(tmp$abundantCloneName, 
-                                  levels = c("low", unique(tmp2$abundantCloneName)))
+                                  levels = c("low abun", unique(tmp2$abundantCloneName)))
   
   p <- ggplot(tmp, aes(x = sample, y = sonicPercent, fill = abundantCloneName), ) +
         geom_bar(stat = "identity") +
