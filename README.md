@@ -11,13 +11,8 @@ Parameters:
 `-r --reportTitle:	report title and output file title` \
 `--itrStart:	itr seq start position for remnant plot` \
 `--itrLength:	itr length for remnant plots` \
-`--piNote: path to notes from pi`
+`--piNote:  path to notes from pi`
 
 `AAV_report.rmd` The default report rmd file. \
-`dependencies.tsv` A list of dependent libraries.
-
-
-
-The SonjaBaselines are files that were created by Sonja
-
-In the MaurerBerkleyProject, Report_Maker1.1AK and AAV_Baseline.Rmd are the first versions updated by Aradhana
+`libraries.tsv` Main libraries required for this repo. \
+`full_depend.tsv` Full dependencies info.
