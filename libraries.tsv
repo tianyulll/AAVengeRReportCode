@@ -8,3 +8,4 @@ argparse	2.2.2
 dplyr	1.1.3        
 ggplot2	3.4.3      
 tidyr	1.3.0  
+GenomicRanges	1.52.0

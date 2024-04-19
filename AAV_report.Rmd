@@ -25,6 +25,7 @@ library(RColorBrewer)
 library(dplyr)
 library(kableExtra)
 library(argparse)
+library(GenomicRanges)
 
 options(tinytex.tlmgr_update = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
@@ -43,6 +44,21 @@ The attached report describes the results of integration site analysis for sampl
 if (!is.null(args$piNote)) {
   file_content <- readLines(args$piNote)
   cat(file_content, sep = "\n")
+} else {
+  cat("No Summary Given")
+}
+
+```
+
+\newpage
+
+# Sample Summary
+
+```{r sampleSummary, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+if (!is.null(args$sampleSummary)) {
+  df <- readRDS(args$sampleSummary)
+  kable(df, "latex",  linesep = "", booktabs = T, caption = "sample meta data")
 } else {
   cat("No Summary Given")
 }
@@ -70,7 +86,7 @@ if(nrow(summary) > 0) {
 
 # Abundance Frequency Plots
 
-Abundance 
+Stacked bar plots indicate clonal abundance frequency. Only the top 10 clonal types are being plotted, and the rest will be ploted in grey as "low abundance". The number above the stacked bar plots indicates the total clonal types. The legend in each plot correspond to the clonal type integration sites. The number after colon indicates the count for that specific clonal type.
 
 ```{r abundantPlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=4.5, fig.width=4}
 
@@ -113,6 +129,8 @@ if(nrow(gene.dist) > 0) {
 
 ```{r genePlot, echo=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
 
+dash <- findRandomVal(frag, inExon, inTU)
+
 ggplot(gene.dist, aes(y = sample)) +
   geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
   geom_point(aes(x = `In Transcription Unit%`, shape = "gene"), alpha = 0.8, size = 2) + 
@@ -120,6 +138,8 @@ ggplot(gene.dist, aes(y = sample)) +
   labs(title = "", x = "") + 
   scale_x_continuous(labels = scales::label_percent(accuracy = .1, scale = 1), 
                      limits = c(0, 100)) +
+  geom_vline(xintercept = dash[[1]], linetype = "dashed") +
+  geom_vline(xintercept = dash[[2]], linetype = "dashed") +
   theme(axis.text = element_text(size = 10),                  
         axis.title.y = element_blank(),
         panel.grid.major = element_blank(),                   

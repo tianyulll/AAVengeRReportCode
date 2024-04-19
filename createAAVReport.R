@@ -14,6 +14,7 @@ parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq 
 parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
 parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
 parser$add_argument("--piNote", help = "path to text file for summary notes")
+parser$add_argument("--sampleSummary", help = "path to meta data table")
 args <- parser$parse_args()
 
 # Read inputs
@@ -49,27 +50,29 @@ abundance <- df %>%
 abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   
   # add low abundance
+  totalClone <- tmp$totalClone[[1]]
   tmpRow <- tibble(sample = tmp$sample[1], sonicLengths = tmp$totalClone[1] - sum(tmp$sonicLengths),
-                   abundantCloneName = "low abun", 
+                   abundantCloneName = "Low abund", 
                    sonicPercent = (tmp$totalClone[1] - sum(tmp$sonicLengths)) / tmp$totalClone[1])
   tmp <- bind_rows(tmpRow, tmp)
   # order by abundance
-  tmp2 <- subset(tmp, abundantCloneName != "low abun")
+  tmp2 <- subset(tmp, abundantCloneName != "Low abund")
   tmp2 <- tmp2[order(tmp2$sonicPercent, decreasing = TRUE),]
   tmp$abundantCloneName <- factor(tmp$abundantCloneName, 
-                                  levels = c("low abun", unique(tmp2$abundantCloneName)))
+                                  levels = c("Low abund", unique(tmp2$abundantCloneName)))
   
   p <- ggplot(tmp, aes(x = sample, y = sonicPercent, fill = abundantCloneName), ) +
-        geom_bar(stat = "identity") +
-        scale_fill_manual(values = c('#eeeeee', brewer.pal(10, "Paired"))) +
-        scale_y_continuous(labels = scales::percent) +
-        #geom_text(aes(label = sonicLengths), position = position_stack(vjust = 0.5),size = 3) +
-        theme(panel.background = element_blank(),
-              axis.title.x = element_blank(),
-              axis.title.y = element_blank(),
-              axis.line.y = element_line(linewidth = 0.2),
-              legend.text = element_text(size = 8),
-              legend.title = element_blank())
+    geom_bar(stat = "identity") +
+    scale_fill_manual(values = c('#eeeeee', brewer.pal(10, "Paired"))) +
+    scale_y_continuous(labels = scales::percent) +
+    annotate('text', x=1:length(totalClone), y=1.04, label=totalClone, size=2.7, hjust=0.5) +
+    #geom_text(aes(label = sonicLengths), position = position_stack(vjust = 0.5),size = 3) +
+    theme(panel.background = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.line.y = element_line(linewidth = 0.2),
+          legend.text = element_text(size = 8),
+          legend.title = element_blank())
   return(p)
   ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), p, dpi = 300)
 })
@@ -135,6 +138,26 @@ gene.dist <- df %>%
   select(-inGene, -inExon) %>%
   unique() %>%
   arrange(sample)
+
+# Find random Value
+frag <- readRDS("reference/hg38RandomGR.rds")
+inExon <- readRDS("reference/hg38.exons.rds")
+inTU <- readRDS("reference/hg38.TUs.rds")
+
+findRandomVal <- function(df, inExon, inTU){
+  # Create random sites gr object
+  set.seed(1)
+  df_subset <- df[sample(nrow(df), 1000), ]
+  randomSite.gr <- makeGRangesFromDataFrame(df_subset)
+  # is the integration in exon
+  isExon <- findOverlaps(randomSite.gr, inExon, type="within", select = "arbitrary") %>%
+    sapply(function(x){ifelse(is.na(x), 0, 1)})
+  # is the integration in TU
+  isTU <- findOverlaps(randomSite.gr, inTU, type="within", select = "arbitrary") %>%
+    sapply(function(x){ifelse(is.na(x), 0, 1)})
+  return(c(sum(isExon)/length(isExon)*100, sum(isTU)/length(isTU)*100))
+}
+
 
 # Create report
 rmarkdown::render("AAV_report.Rmd",
