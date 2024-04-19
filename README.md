@@ -1,6 +1,9 @@
 # AAVengeRReportCode
 
 This tool kit generates a standarized, reproducible report from AAVengeR outputs. 
+`reference` folder contains required reference data for calculating random integration site distribution. \
+`sampleReport` contains a sample output by running the toolkit on tak981 dataset. \
+`createRandomPercentage.r` is not required. It was used to build reference dataset.
 
 Usage: `Rscript createAAVReport.R -i DeJongMice.rds -o test -r test1`
 
