@@ -7,14 +7,14 @@ library(RColorBrewer)
 
 # parameters
 parser <- ArgumentParser()
-parser$add_argument("-i", "--input", help = "input data file in RDS")
+parser$add_argument("-i", "--input", help = "input data file in RDS", required = T)
 parser$add_argument("-o" ,"--outputDir", default = "output", help = "Output directory")
 parser$add_argument("-r",  "--reportTitle", default = "AAV_report", help = "file name for the report")
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
 parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
 parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
 parser$add_argument("--piNote", help = "path to text file for summary notes")
-parser$add_argument("--sampleSummary", help = "path to meta data table")
+parser$add_argument("--meta", help = "path to meta data table, must have column sample and info", required = T)
 args <- parser$parse_args()
 
 # Read inputs
@@ -22,6 +22,7 @@ df <- readRDS(args$input)
 buildAAVremnantPlots_ITRlength <-  args$itrLength
 buildAAVremnantPlots_ITRseqStart <- args$itrStart
 buildAAVremnantPlots_NTbinSize <- args$ntBinSize
+meta <- readRDS(args$meta)
 
 # Run a summary
 summary <- df %>% 
@@ -32,22 +33,35 @@ summary <- df %>%
             "Unique Sites" = sum(count), "inferred cell" = sum(sonicLengths)) %>%
   mutate("Chao1" = vegan::estimateR(unlist(ChaoLengths))["S.chao1"]) %>%
   select(- ChaoLengths) %>%
-  rename(patientID = subject)
+  rename(patientID = subject) %>%
+  left_join(y = meta, by = "sample") # merge with meta df
 
-# Create abundance plot
-# with top 10 most abundant site
+# Join meta-info with aavenger
+meta.summary <- summary %>% 
+  select(sample, info) %>%
+  mutate(description = paste(sample, info, sep = "-"))
+
+df <- df %>%
+  left_join(meta, by = "sample")
+  
+# Create abundance plot with top 10 most abundant site
 abundance <- df %>%
-  select(subject, sample, sonicLengths, nearestGene, posid) %>%
+  select(sample, sonicLengths, nearestGene, posid, info) %>%
   mutate(abundantCloneName = paste0(posid, "\n", nearestGene, ":", sonicLengths)) %>% 
   select(-nearestGene, -posid) %>%
   group_by(sample) %>%
   mutate(totalClone = sum(sonicLengths)) %>%
   slice_max(order_by = sonicLengths, n = 10, with_ties = F) %>%
   mutate(sonicPercent = sonicLengths / totalClone) %>%
-  mutate(sample = paste(subject, sample, sep = "-")) %>% 
-  select(-subject)
+  mutate(sample = paste(sample, info, sep = "-")) %>%  # combine with meta-info
+  select(-info)
 
 abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
+  "
+  Iterate through the abundnace dataframe by samples.
+  Calculate the rest clonotypes as low abundance.
+  Save the raw plots and write on-disk.
+  "
   
   # add low abundance
   totalClone <- tmp$totalClone[[1]]
@@ -108,7 +122,7 @@ plotRemnant <- function(df, outDir){
       scale_y_continuous(limits = c(0, NA), expand = c(0, 0)) + 
       #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip1, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
       #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip2, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
-      ggtitle(paste0(x$subject[1], ' | ', x$sample[1], ' | ', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
+      ggtitle(paste0(x$sample[1], ' | ', x$info[1], ' | ', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
       labs(x = 'ITR position', y = 'Integrations') +
       guides(fill=guide_legend(nrow = 1, byrow = TRUE, reverse = TRUE)) +
       theme(text = element_text(size=16), plot.title = element_text(size = 14),
@@ -137,7 +151,9 @@ gene.dist <- df %>%
          "In Transcription Unit%" = round(mean(inGene)*100, digits = 1)) %>%
   select(-inGene, -inExon) %>%
   unique() %>%
+  left_join(y = meta.summary, by = "sample") %>%
   arrange(sample)
+
 
 # Find random Value
 frag <- readRDS("reference/hg38RandomGR.rds")

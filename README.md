@@ -19,3 +19,5 @@ Parameters:
 `AAV_report.rmd` The default report rmd file. \
 `libraries.tsv` Main libraries required for this repo. \
 `full_depend.tsv` Full dependencies info.
+
+A few assumptions of the toolkit: the input file must be AAVengeR outputs in RDS. The meta-must have column sample and info in RDS. All other parameters are optional. By default the outputs will write into the current working directory.
