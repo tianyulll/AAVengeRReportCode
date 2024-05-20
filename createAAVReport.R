@@ -54,6 +54,8 @@ df <- df %>%
   
 # Create abundance plot with top 10 most abundant site
 abundance <- df %>%
+  # tidy-up long geneName
+  mutate(nearestGene = ifelse(nchar(nearestGene) > 10, substr(nearestGene, 1, 10), nearestGene)) %>% 
   select(sample, sonicLengths, nearestGene, posid, info) %>%
   mutate(abundantCloneName = paste0(posid, "\n", nearestGene, ":", sonicLengths)) %>% 
   select(-nearestGene, -posid) %>%
@@ -100,9 +102,11 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
 
 # Create ITR remnant plots
 plotRemnant <- function(df, outDir){
+  
   buildAAVremnantPlots_ITRdumbellTip1 <- 125
   buildAAVremnantPlots_ITRdumbellTip2 <- 147
-
+  remnant_colors <- c('green4', 'green2', 'gold2', 'orange', 'orangered1', 'red4')
+  
   x <- lapply(split(df, df$sample), function(x){
     message('sample: ', x$sample[1])
     
@@ -112,15 +116,16 @@ plotRemnant <- function(df, outDir){
                 bin = cut(remnantLen, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2),
                 r = stringr::str_count(x$repLeaderSeqMap, ';'),
                 r2 = ifelse(r >= 5, '≥ 5', r)) %>% group_by(bin, r2) %>% summarise(n = n()) %>% ungroup() %>% 
-      mutate(r2 = factor(r2, levels = rev(c('0', '1', '2', '3', '4', expression(">= 5")))))
-    
+      mutate(r2 = factor(r2, levels = rev(c('0', '1', '2', '3', '4', expression(">= 5"))))) %>%
+      droplevels() # drop unused factor levels
+
     range2 <- (range * buildAAVremnantPlots_NTbinSize) - buildAAVremnantPlots_NTbinSize
     
     p <- ggplot(d, aes(bin, n, fill = r2)) + 
       theme_bw() +
       geom_col() +
       scale_fill_manual(name = 'Recombinations', 
-                        values = rev(c('green4', 'green2', 'gold2', 'orange', 'orangered1', 'red4')), 
+                        values = rev(remnant_colors[1:length(levels(d$r2))]), 
                         drop = FALSE) +
       scale_x_continuous(breaks = range,
                          labels = range2, 
