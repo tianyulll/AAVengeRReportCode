@@ -120,8 +120,6 @@ if(nrow(gene.dist) > 0) {
 
 ```{r genePlot, echo=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
 
-dash <- findRandomVal(frag, inExon, inTU)
-
 ggplot(gene.dist, aes(y = description)) +
   geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
   geom_point(aes(x = `In Transcription Unit%`, shape = "gene"), alpha = 0.8, size = 2) + 

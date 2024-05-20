@@ -14,7 +14,8 @@ parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq 
 parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
 parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
 parser$add_argument("--piNote", help = "path to text file for summary notes")
-parser$add_argument("--meta", help = "path to meta data table, must have column sample and info", required = T)
+parser$add_argument("--meta", help = "path to meta data table, must have column sample and info")
+parser$add_argument("-s",  "--species", default = "human", help = "choose from human or mice")
 args <- parser$parse_args()
 
 # Read inputs
@@ -22,7 +23,14 @@ df <- readRDS(args$input)
 buildAAVremnantPlots_ITRlength <-  args$itrLength
 buildAAVremnantPlots_ITRseqStart <- args$itrStart
 buildAAVremnantPlots_NTbinSize <- args$ntBinSize
-meta <- readRDS(args$meta)
+
+# Parse meta data
+if (is.null(args$meta)) {
+  meta <- df %>% select(sample) %>% unique()
+  meta$info <- meta$sample
+} else {
+  meta <- readRDS(args$meta)
+}
 
 # Run a summary
 summary <- df %>% 
@@ -53,7 +61,7 @@ abundance <- df %>%
   mutate(totalClone = sum(sonicLengths)) %>%
   slice_max(order_by = sonicLengths, n = 10, with_ties = F) %>%
   mutate(sonicPercent = sonicLengths / totalClone) %>%
-  mutate(sample = paste(sample, info, sep = "-")) %>%  # combine with meta-info
+  mutate(sample = paste(sample, info, sep = "\n")) %>%  # combine with meta-info
   select(-info)
 
 abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
@@ -62,7 +70,6 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   Calculate the rest clonotypes as low abundance.
   Save the raw plots and write on-disk.
   "
-  
   # add low abundance
   totalClone <- tmp$totalClone[[1]]
   tmpRow <- tibble(sample = tmp$sample[1], sonicLengths = tmp$totalClone[1] - sum(tmp$sonicLengths),
@@ -88,7 +95,7 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
           legend.text = element_text(size = 8),
           legend.title = element_blank())
   return(p)
-  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), p, dpi = 300)
+  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), p, dpi = 300, create.dir = T)
 })
 
 # Create ITR remnant plots
@@ -122,7 +129,7 @@ plotRemnant <- function(df, outDir){
       scale_y_continuous(limits = c(0, NA), expand = c(0, 0)) + 
       #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip1, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
       #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip2, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
-      ggtitle(paste0(x$sample[1], ' | ', x$info[1], ' | ', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
+      ggtitle(paste0(x$sample[1], ' | ', x$info[1], '\n', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
       labs(x = 'ITR position', y = 'Integrations') +
       guides(fill=guide_legend(nrow = 1, byrow = TRUE, reverse = TRUE)) +
       theme(text = element_text(size=16), plot.title = element_text(size = 14),
@@ -135,7 +142,7 @@ plotRemnant <- function(df, outDir){
       coord_cartesian(clip = "off")
     
     ggsave(file.path(outDir, paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), p, dpi = 300, 
-           width = 10, height = 7, units = 'in')
+           width = 10, height = 7, units = 'in', create.dir = T)
     p    
   })
   return(x)
@@ -156,24 +163,13 @@ gene.dist <- df %>%
 
 
 # Find random Value
-frag <- readRDS("reference/hg38RandomGR.rds")
-inExon <- readRDS("reference/hg38.exons.rds")
-inTU <- readRDS("reference/hg38.TUs.rds")
-
-findRandomVal <- function(df, inExon, inTU){
-  # Create random sites gr object
-  set.seed(1)
-  df_subset <- df[sample(nrow(df), 1000), ]
-  randomSite.gr <- makeGRangesFromDataFrame(df_subset)
-  # is the integration in exon
-  isExon <- findOverlaps(randomSite.gr, inExon, type="within", select = "arbitrary") %>%
-    sapply(function(x){ifelse(is.na(x), 0, 1)})
-  # is the integration in TU
-  isTU <- findOverlaps(randomSite.gr, inTU, type="within", select = "arbitrary") %>%
-    sapply(function(x){ifelse(is.na(x), 0, 1)})
-  return(c(sum(isExon)/length(isExon)*100, sum(isTU)/length(isTU)*100))
-}
-
+if (args$s == "human") {
+  dash <- readRDS(file = "reference/hg38.dash.rds")
+} else if (args$s == "mice") {
+  dash <- readRDS(file = "reference/mm9.dash.rds")
+} else (
+  stop("this species is not included in reference")
+)
 
 # Create report
 rmarkdown::render("AAV_report.Rmd",

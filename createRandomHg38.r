@@ -1,5 +1,8 @@
 '''
 This script creates df for random hg38 fragments
+Randomly select 1000 sites
+Find percentage in Exon and
+percentage in Transcription Unit
 '''
 
 
@@ -25,8 +28,8 @@ df <- data.frame(
 
 saveRDS(df, file = "data/hg38RandomGR.rds")
 
-inExon <- readRDS("data/data/genomeAnnotations/hg38.exons.rds")
-inTU <- readRDS("data/data/genomeAnnotations/hg38.TUs.rds")
+inExon <- readRDS("data/hg38Ref/genomeAnnotations/hg38.exons.rds")
+inTU <- readRDS("data/hg38Ref/genomeAnnotations/hg38.TUs.rds")
 
 findRandomVal <- function(df, inExon, inTU){
   # Create random sites gr object
@@ -42,7 +45,7 @@ findRandomVal <- function(df, inExon, inTU){
   return(c(sum(isExon)/length(isExon)*100, sum(isTU)/length(isTU)*100))
 }
 
-findRandomVal(df, inExon, inTU)
+hg38.dash <- findRandomVal(df, inExon, inTU)
 
-
+saveRDS(hg38.dash, file = "reference/hg38.dash.rds")
 
