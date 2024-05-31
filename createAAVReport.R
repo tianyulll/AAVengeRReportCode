@@ -97,7 +97,8 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
           legend.text = element_text(size = 8),
           legend.title = element_blank())
   return(p)
-  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), p, dpi = 300, create.dir = T)
+  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), 
+         p, dpi = 300, create.dir = T)
 })
 
 # Create ITR remnant plots
@@ -146,14 +147,14 @@ plotRemnant <- function(df, outDir){
                  size = 7, shape="\u27A1", inherit.aes = FALSE) +
       coord_cartesian(clip = "off")
     
-    ggsave(file.path(outDir, paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), p, dpi = 300, 
-           width = 10, height = 7, units = 'in', create.dir = T)
+    ggsave(file.path(outDir,"reportPlots/abundancePlots", paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), 
+           p, dpi = 300, width = 10, height = 7, units = 'in', create.dir = T)
     p    
   })
   return(x)
 }
 
-remnant.plot <- plotRemnant(df, paste0(args$outputDir, "/reportPlots/remnantPlots"))
+remnant.plot <- plotRemnant(df, args$outputDir)
 
 # Create Gene distribution df
 gene.dist <- df %>% 

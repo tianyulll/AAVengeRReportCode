@@ -127,7 +127,7 @@ ggplot(gene.dist, aes(y = description)) +
   labs(title = "", x = "") + 
   scale_x_continuous(labels = scales::label_percent(accuracy = .1, scale = 1), 
                      limits = c(0, 100)) +
-  geom_vline(linetype = "dashed", aes(xintercept = dash[[1]], color = "random gene")) +
+  geom_vline(linetype = "dashed", aes(xintercept = dash[[1]], color = "random exon")) +
   geom_vline(linetype = "dotted", aes(xintercept = dash[[2]], color = "random TU")) +
   theme(axis.text = element_text(size = 10),                  
         axis.title.y = element_blank(),
