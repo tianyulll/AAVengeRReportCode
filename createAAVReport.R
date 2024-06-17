@@ -1,35 +1,52 @@
-library(tidyr)
-library(ggplot2)
-library(dplyr)
-library(argparse)
-library(vegan)
-library(RColorBrewer)
+suppressMessages({
+  library(tidyr)
+  library(ggplot2)
+  library(dplyr)
+  library(argparse)
+  library(vegan)
+  library(RColorBrewer)
+  source("utilities.R")
+})
 
 # parameters
 parser <- ArgumentParser()
-parser$add_argument("-i", "--input", help = "input data file in RDS", required = T)
+parser$add_argument("-i", "--input", required = T, help = "input data file in rds/excel, or name in database")
 parser$add_argument("-o" ,"--outputDir", default = "output", help = "Output directory")
-parser$add_argument("-r",  "--reportTitle", default = "AAV_report", help = "file name for the report")
+parser$add_argument("-t",  "--reportTitle", default = "AAV_report", help = "file name for the report")
+parser$add_argument("--piNote", help = "path to text file for summary notes")
+parser$add_argument("-m", "--meta", help = "path to meta data table, must have column sample and info")
+parser$add_argument("-s",  "--species", default = "human", help = "choose from human or mice")
+parser$add_argument("-f", "--filter", required = F,  help = "only keep sites with reads greater than this threshold")
+
+# these parameters will be removed in future versions
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
 parser$add_argument("--itrLength", type="integer", default = 197, help = "itr length for remnant plots")
 parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size for remnant plot")
-parser$add_argument("--piNote", help = "path to text file for summary notes")
-parser$add_argument("--meta", help = "path to meta data table, must have column sample and info")
-parser$add_argument("-s",  "--species", default = "human", help = "choose from human or mice")
+
 args <- parser$parse_args()
 
+
 # Read inputs
-df <- readRDS(args$input)
+df <- read_data(args$input)
+
+
 buildAAVremnantPlots_ITRlength <-  args$itrLength
 buildAAVremnantPlots_ITRseqStart <- args$itrStart
 buildAAVremnantPlots_NTbinSize <- args$ntBinSize
 
 # Parse meta data
+# currently accepting RDS only
 if (is.null(args$meta)) {
   meta <- df %>% select(sample) %>% unique()
   meta$info <- meta$sample
 } else {
   meta <- readRDS(args$meta)
+}
+
+# run a filter
+if (!is.null(args$filter)) {
+  df <- df %>%
+    filter(reads > args$filter)
 }
 
 # Run a summary
@@ -96,10 +113,13 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
           axis.line.y = element_line(linewidth = 0.2),
           legend.text = element_text(size = 8),
           legend.title = element_blank())
+  
   return(p)
   ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), 
          p, dpi = 300, create.dir = T)
 })
+
+message("log: abundance plots created")
 
 # Create ITR remnant plots
 plotRemnant <- function(df, outDir){
@@ -109,7 +129,7 @@ plotRemnant <- function(df, outDir){
   remnant_colors <- c('green4', 'green2', 'gold2', 'orange', 'orangered1', 'red4')
   
   x <- lapply(split(df, df$sample), function(x){
-    message('sample: ', x$sample[1])
+    #message('sample: ', x$sample[1])
     
     range <- seq(0, buildAAVremnantPlots_ITRlength, buildAAVremnantPlots_NTbinSize)
     
@@ -149,12 +169,13 @@ plotRemnant <- function(df, outDir){
     
     ggsave(file.path(outDir,"reportPlots/abundancePlots", paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), 
            p, dpi = 300, width = 10, height = 7, units = 'in', create.dir = T)
-    p    
+    p
   })
   return(x)
 }
 
-remnant.plot <- plotRemnant(df, args$outputDir)
+remnant.plot <- suppressMessages(plotRemnant(df, args$outputDir))
+message("log: remnant plots created")
 
 # Create Gene distribution df
 gene.dist <- df %>% 
@@ -174,11 +195,11 @@ if (args$s == "human") {
 } else if (args$s == "mice") {
   dash <- readRDS(file = "reference/mm9.dash.rds")
 } else (
-  stop("this species is not included in reference")
+  stop("provided species is not included in reference")
 )
 
 # Create report
 rmarkdown::render("AAV_report.Rmd",
-                  output_dir = args$outputDir, output_file = paste0(args$r, ".pdf"),
+                  output_dir = args$outputDir, output_file = paste0(args$reportTitle, ".pdf"),
                   params = list('date'  = format(Sys.Date(), format="%B %d, %Y"),
-                                'title' = args$r))
+                                'title' = args$reportTitle))

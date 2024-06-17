@@ -104,7 +104,7 @@ for (i in remnant.plot){
 
 The plot below details the % of integration sites within two features, 'in genes' and 'in Exons', summarized per sample. 'in Genes' refers to sites within transcription unit boundaries and 'in Exons' refers to sites within exon boundaries. 
 
-```{r geneTable, echo=FALSE}
+```{r geneTable, echo=FALSE, message=FALSE, warning=FALSE}
 if(nrow(gene.dist) > 0) {
   tmp <- gene.dist %>% 
     select(-description) %>%
@@ -118,7 +118,7 @@ if(nrow(gene.dist) > 0) {
 }
 ```
 
-```{r genePlot, echo=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
+```{r genePlot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
 
 ggplot(gene.dist, aes(y = description)) +
   geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
