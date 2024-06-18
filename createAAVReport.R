@@ -5,6 +5,7 @@ suppressMessages({
   library(argparse)
   library(vegan)
   library(RColorBrewer)
+  library(stringr)
   source("utilities.R")
 })
 
@@ -37,8 +38,7 @@ buildAAVremnantPlots_NTbinSize <- args$ntBinSize
 # Parse meta data
 # currently accepting RDS only
 if (is.null(args$meta)) {
-  meta <- df %>% select(sample) %>% unique()
-  meta$info <- meta$sample
+  meta <- df %>% select(sample, subject) %>% unique() %>% rename(info = subject)
 } else {
   meta <- readRDS(args$meta)
 }
@@ -68,7 +68,21 @@ meta.summary <- summary %>%
 
 df <- df %>%
   left_join(meta, by = "sample")
-  
+
+# Make rearrangment summary
+rearrangement <- df %>% select(sample, subject, posid, reads, repLeaderSeqMap, info) %>%
+  mutate(breaks = str_count(repLeaderSeqMap, ";")) %>%
+  mutate(breaks = ifelse(is.na(breaks), 0, breaks)) %>% 
+  mutate(boolBreak = ifelse(breaks == 0, 0, 1)) %>%
+  mutate(count = 1) %>%
+  group_by(sample, subject, info) %>%
+  summarise(totalBreaks = sum(breaks), totalReads = sum(reads), 
+            totalCounts = sum(count), totalBreakBool = sum(boolBreak)) %>% 
+  mutate("break%" = round(totalBreaks/totalCounts*100, 1),
+         "breakBool%" = round(totalBreakBool / totalCounts*100), 1) %>%
+  select(sample, subject, info, "break%", "breakBool%")
+
+
 # Create abundance plot with top 10 most abundant site
 abundance <- df %>%
   # tidy-up long geneName

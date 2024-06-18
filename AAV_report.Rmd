@@ -86,6 +86,21 @@ for (i in abundantPlot) {
 
 \newpage
 
+# AAV ITR Breakpoint Summary
+
+This is a summary table for itr breakpoints. 
+
+```{r breakSummary, echo=FALSE}
+if(nrow(rearrangement) > 0) {
+  kable(rearrangement, "latex",  linesep = "", booktabs = T, caption = "Rearrangement Summary Table") %>%
+    kable_styling(latex_options = c("hold_position", "scale_down"))
+} else {
+  print("error making summary table for breaks")
+}
+```
+
+\newpage
+
 # AAV ITR Breakpoint Plots
 
 These plots are a visual representation of the ITR breakpoint at the site of genomic integration. The arrow indicates the priming location within the ITR and the x-coordinate of each bar corresponds to a departure from an expected ITR sequence. Each departure from expectation is demarcated as a rearrangement, and bars are colored to reflect the frequency of rearrangement at each integration site. 
@@ -149,6 +164,4 @@ Modules Called:
 * core.R  
 * mapSiteLeaderSequences.R  
 * buildAAVremnantPlots.R  
-* anchorReadRearrangements.R
-
 

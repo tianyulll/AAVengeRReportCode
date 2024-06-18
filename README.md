@@ -30,12 +30,15 @@ example: `Rscript createAAVReport.R -i AAVHelaTopo -o sampleReport -t topoDefaul
 `--itrStart:	itr seq start position for remnant plot` \
 `--itrLength:	itr length for remnant plots` 
 
-Default behaviors of the software:
-It will write temporary files in working directory. All plots and reports will write in the output directory. Only `input` is required. However it is recommended to provide more parameters. The default species is human. Currently we only support human and mouse.
+Default behaviors of the software: 
+
+It will write temporary files in working directory. All plots and reports will write in the output directory. Only `input` is required. However it is recommended to provide more parameters. The default species is human. Currently we only support human and mouse.m 
+
+Meta data can be provided as a RDS file containing sample and info columns. sample columns must correspond to GTSP ids. If not provided, the subject column will be used as meta data information.
 
 The input can be a local rds or excel file from AAVengeR outputs. 
 It also accepts a string of the project name in AAVengeR database.
 
 ## Contact
-[Tianyu](tianyu.lu@pennmedicine.upenn.edu)
+[Tianyu](mailto:tianyu.lu@pennmedicine.upenn.edu)
 [Aradhana]()
