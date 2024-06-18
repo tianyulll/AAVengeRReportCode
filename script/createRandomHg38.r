@@ -9,6 +9,7 @@ percentage in Transcription Unit
 library(dplyr)
 library(GenomicRanges)
 library(stringr)
+source("utilities.R")
 
 # Read in random fragments
 load("data/hg38.randomFragments.1000000.100.RData")
@@ -30,20 +31,6 @@ saveRDS(df, file = "data/hg38RandomGR.rds")
 
 inExon <- readRDS("data/hg38Ref/genomeAnnotations/hg38.exons.rds")
 inTU <- readRDS("data/hg38Ref/genomeAnnotations/hg38.TUs.rds")
-
-findRandomVal <- function(df, inExon, inTU){
-  # Create random sites gr object
-  set.seed(1)
-  df_subset <- df[sample(nrow(df), 1000), ]
-  randomSite.gr <- makeGRangesFromDataFrame(df_subset)
-  # is the integration in exon
-  isExon <- findOverlaps(randomSite.gr, inExon, type="within", select = "arbitrary") %>%
-    sapply(function(x){ifelse(is.na(x), 0, 1)})
-  # is the integration in TU
-  isTU <- findOverlaps(randomSite.gr, inTU, type="within", select = "arbitrary") %>%
-    sapply(function(x){ifelse(is.na(x), 0, 1)})
-  return(c(sum(isExon)/length(isExon)*100, sum(isTU)/length(isTU)*100))
-}
 
 hg38.dash <- findRandomVal(df, inExon, inTU)
 
