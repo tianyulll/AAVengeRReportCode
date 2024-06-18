@@ -25,10 +25,11 @@ example: `Rscript createAAVReport.R -i AAVHelaTopo -o sampleReport -t topoDefaul
 `-t --reportTitle:	report title and output file title` \
 `--piNote:  path to notes from pi` \
 `-m --meta:  meta data of samples` \
-`-s --species:  species of the data ` \
+`--species:  species of the data ` \
 `-f --filters: a threshold for filtering site based on reads` \
 `--itrStart:	itr seq start position for remnant plot` \
-`--itrLength:	itr length for remnant plots` 
+`--itrLength:	itr length for remnant plots` \
+`--skip-img:  skipping saving images separately`
 
 Default behaviors of the software: 
 
@@ -40,5 +41,6 @@ The input can be a local rds or excel file from AAVengeR outputs.
 It also accepts a string of the project name in AAVengeR database.
 
 ## Contact
-[Tianyu](mailto:tianyu.lu@pennmedicine.upenn.edu)
+
+[Tianyu](mailto:tianyu.lu@pennmedicine.upenn.edu) \
 [Aradhana]()

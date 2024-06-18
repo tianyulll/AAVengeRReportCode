@@ -16,8 +16,9 @@ parser$add_argument("-o" ,"--outputDir", default = "output", help = "Output dire
 parser$add_argument("-t",  "--reportTitle", default = "AAV_report", help = "file name for the report")
 parser$add_argument("--piNote", help = "path to text file for summary notes")
 parser$add_argument("-m", "--meta", help = "path to meta data table, must have column sample and info")
-parser$add_argument("-s",  "--species", default = "human", help = "choose from human or mice")
+parser$add_argument("--species", default = "human", required = F, help = "choose from human or mice")
 parser$add_argument("-f", "--filter", required = F,  help = "only keep sites with reads greater than this threshold")
+parser$add_argument("--skip-img", action="store_true", help = "if provided, plots will NOT be saved separately")
 
 # these parameters will be removed in future versions
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
@@ -38,7 +39,7 @@ buildAAVremnantPlots_NTbinSize <- args$ntBinSize
 # Parse meta data
 # currently accepting RDS only
 if (is.null(args$meta)) {
-  meta <- df %>% select(sample, subject) %>% unique() %>% rename(info = subject)
+  meta <- df %>% select(sample, subject) %>% unique() %>% dplyr::rename(info = subject)
 } else {
   meta <- readRDS(args$meta)
 }
@@ -58,7 +59,7 @@ summary <- df %>%
             "Unique Sites" = sum(count), "inferred cell" = sum(sonicLengths)) %>%
   mutate("Chao1" = vegan::estimateR(unlist(ChaoLengths))["S.chao1"]) %>%
   select(- ChaoLengths) %>%
-  rename(patientID = subject) %>%
+  dplyr::rename(patientID = subject) %>%
   left_join(y = meta, by = "sample") # merge with meta df
 
 # Join meta-info with aavenger
@@ -129,8 +130,12 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
           legend.title = element_blank())
   
   return(p)
-  ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), 
-         p, dpi = 300, create.dir = T)
+  
+  if (args$skip_img == F) {
+    ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), 
+           p, dpi = 300, create.dir = T)
+  }
+
 })
 
 message("log: abundance plots created")
@@ -181,8 +186,11 @@ plotRemnant <- function(df, outDir){
                  size = 7, shape="\u27A1", inherit.aes = FALSE) +
       coord_cartesian(clip = "off")
     
-    ggsave(file.path(outDir,"reportPlots/abundancePlots", paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), 
-           p, dpi = 300, width = 10, height = 7, units = 'in', create.dir = T)
+    if (args$skip_img == F) {
+      ggsave(file.path(outDir,"reportPlots/abundancePlots", paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), 
+             p, dpi = 300, width = 10, height = 7, units = 'in', create.dir = T)
+    }
+    
     p
   })
   return(x)
@@ -204,9 +212,9 @@ gene.dist <- df %>%
 
 
 # Find random Value
-if (args$s == "human") {
+if (args$species == "human") {
   dash <- readRDS(file = "reference/hg38.dash.rds")
-} else if (args$s == "mice") {
+} else if (args$species == "mice") {
   dash <- readRDS(file = "reference/mm9.dash.rds")
 } else (
   stop("provided species is not included in reference")
