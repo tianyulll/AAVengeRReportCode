@@ -11,14 +11,14 @@ suppressMessages({
 
 # parameters
 parser <- ArgumentParser()
-parser$add_argument("-i", "--input", required = T, help = "input data file in rds/excel, or name in database")
+parser$add_argument("-i", "--input", help = "input data file in rds/excel, or name in database")
 parser$add_argument("-o" ,"--outputDir", default = "output", help = "Output directory")
 parser$add_argument("-t",  "--reportTitle", default = "AAV_report", help = "file name for the report")
 parser$add_argument("--piNote", help = "path to text file for summary notes")
 parser$add_argument("-m", "--meta", help = "path to meta data table, must have column sample and info")
 parser$add_argument("--species", default = "human", required = F, help = "choose from human or mice")
 parser$add_argument("-f", "--filter", required = F,  help = "only keep sites with reads greater than this threshold")
-parser$add_argument("--skip-img", action="store_true", help = "if provided, plots will NOT be saved separately")
+parser$add_argument("--saveimg", action = 'store_true', help = "if provided, plots will NOT be saved separately")
 
 # these parameters will be removed in future versions
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
@@ -28,16 +28,23 @@ parser$add_argument("--ntBinSize", type="integer", default = 3, help = "bin size
 args <- parser$parse_args()
 
 
-# Read inputs
+
+# Handle zero input
+if (is.null(args$input)) {
+  message("Input not given; pulling available info from db")
+  getAvailTrial()
+  stop("Please run pipeline with one of the trials")
+}
+# read input as df
 df <- read_data(args$input)
 
-
+# to be removed in future versions
 buildAAVremnantPlots_ITRlength <-  args$itrLength
 buildAAVremnantPlots_ITRseqStart <- args$itrStart
 buildAAVremnantPlots_NTbinSize <- args$ntBinSize
 
 # Parse meta data
-# currently accepting RDS only
+# use subject info if not provided
 if (is.null(args$meta)) {
   meta <- df %>% select(sample, subject) %>% unique() %>% dplyr::rename(info = subject)
 } else {
@@ -71,17 +78,7 @@ df <- df %>%
   left_join(meta, by = "sample")
 
 # Make rearrangment summary
-rearrangement <- df %>% select(sample, subject, posid, reads, repLeaderSeqMap, info) %>%
-  mutate(breaks = str_count(repLeaderSeqMap, ";")) %>%
-  mutate(breaks = ifelse(is.na(breaks), 0, breaks)) %>% 
-  mutate(boolBreak = ifelse(breaks == 0, 0, 1)) %>%
-  mutate(count = 1) %>%
-  group_by(sample, subject, info) %>%
-  summarise(totalBreaks = sum(breaks), totalReads = sum(reads), 
-            totalCounts = sum(count), totalBreakBool = sum(boolBreak)) %>% 
-  mutate("break%" = round(totalBreaks/totalCounts*100, 1),
-         "breakBool%" = round(totalBreakBool / totalCounts*100), 1) %>%
-  select(sample, subject, info, "break%", "breakBool%")
+rearrangement <- getRearrangeDf(df)
 
 
 # Create abundance plot with top 10 most abundant site
@@ -95,6 +92,7 @@ abundance <- df %>%
   mutate(totalClone = sum(sonicLengths)) %>%
   slice_max(order_by = sonicLengths, n = 10, with_ties = F) %>%
   mutate(sonicPercent = sonicLengths / totalClone) %>%
+  mutate(fileName = sample) %>%
   mutate(sample = paste(sample, info, sep = "\n")) %>%  # combine with meta-info
   select(-info)
 
@@ -106,10 +104,13 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
   "
   # add low abundance
   totalClone <- tmp$totalClone[[1]]
+  fileName = tmp$fileName[1]
+  
   tmpRow <- tibble(sample = tmp$sample[1], sonicLengths = tmp$totalClone[1] - sum(tmp$sonicLengths),
                    abundantCloneName = "Low abund", 
                    sonicPercent = (tmp$totalClone[1] - sum(tmp$sonicLengths)) / tmp$totalClone[1])
   tmp <- bind_rows(tmpRow, tmp)
+  
   # order by abundance
   tmp2 <- subset(tmp, abundantCloneName != "Low abund")
   tmp2 <- tmp2[order(tmp2$sonicPercent, decreasing = TRUE),]
@@ -129,75 +130,19 @@ abundantPlot <- lapply(split(abundance, abundance$sample), function(tmp){
           legend.text = element_text(size = 8),
           legend.title = element_blank())
   
-  return(p)
-  
-  if (args$skip_img == F) {
-    ggsave(file.path(args$outputDir,"reportPlots/abundancePlots", paste0(tmp$sample[1], '.png')), 
-           p, dpi = 300, create.dir = T)
+  if (args$saveimg) {
+    ggsave(filename = file.path(args$outputDir,"reportPlots/abundancePlots", paste0(fileName, '.png')), 
+           plot = p, dpi = 300, create.dir = T)
   }
-
+  
+  return(p)
 })
 
-message("log: abundance plots created")
+message("Abundance plots created!")
 
-# Create ITR remnant plots
-plotRemnant <- function(df, outDir){
-  
-  buildAAVremnantPlots_ITRdumbellTip1 <- 125
-  buildAAVremnantPlots_ITRdumbellTip2 <- 147
-  remnant_colors <- c('green4', 'green2', 'gold2', 'orange', 'orangered1', 'red4')
-  
-  x <- lapply(split(df, df$sample), function(x){
-    #message('sample: ', x$sample[1])
-    
-    range <- seq(0, buildAAVremnantPlots_ITRlength, buildAAVremnantPlots_NTbinSize)
-    
-    d <- tibble(remnantLen = as.integer(sub('\\.\\.', '', stringr::str_extract(x$repLeaderSeqMap, '\\.\\.\\d+'))) + buildAAVremnantPlots_ITRseqStart,
-                bin = cut(remnantLen, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2),
-                r = stringr::str_count(x$repLeaderSeqMap, ';'),
-                r2 = ifelse(r >= 5, '≥ 5', r)) %>% group_by(bin, r2) %>% summarise(n = n()) %>% ungroup() %>% 
-      mutate(r2 = factor(r2, levels = rev(c('0', '1', '2', '3', '4', expression(">= 5"))))) %>%
-      droplevels() # drop unused factor levels
-
-    range2 <- (range * buildAAVremnantPlots_NTbinSize) - buildAAVremnantPlots_NTbinSize
-    
-    p <- ggplot(d, aes(bin, n, fill = r2)) + 
-      theme_bw() +
-      geom_col() +
-      scale_fill_manual(name = 'Recombinations', 
-                        values = rev(remnant_colors[1:length(levels(d$r2))]), 
-                        drop = FALSE) +
-      scale_x_continuous(breaks = range,
-                         labels = range2, 
-                         limits = c(buildAAVremnantPlots_NTbinSize, 
-                                    cut(buildAAVremnantPlots_ITRlength, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2))) +
-      scale_y_continuous(limits = c(0, NA), expand = c(0, 0)) + 
-      #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip1, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
-      #geom_vline(xintercept = cut(buildAAVremnantPlots_ITRdumbellTip2, breaks = c(-Inf, range, Inf), labels = FALSE), linetype = 'dashed') +
-      ggtitle(paste0(x$sample[1], ' | ', x$info[1], '\n', formatC(n_distinct(x$posid), format="d", big.mark=","), ' sites')) + 
-      labs(x = 'ITR position', y = 'Integrations') +
-      guides(fill=guide_legend(nrow = 1, byrow = TRUE, reverse = TRUE)) +
-      theme(text = element_text(size=16), plot.title = element_text(size = 14),
-            legend.title = element_text(size=12),
-            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.background = element_blank(), panel.border = element_blank(), axis.line = element_line(colour = "black"),
-            legend.position="bottom", plot.margin=grid::unit(c(0.25, 0.25, 0.25, 0.25), "in")) +
-      geom_point(data = tibble(x = cut(buildAAVremnantPlots_ITRseqStart, breaks = c(-Inf, range, Inf), labels = FALSE) - (buildAAVremnantPlots_NTbinSize/2)), aes(x, 0), 
-                 size = 7, shape="\u27A1", inherit.aes = FALSE) +
-      coord_cartesian(clip = "off")
-    
-    if (args$skip_img == F) {
-      ggsave(file.path(outDir,"reportPlots/abundancePlots", paste0(x$trial[1], '-', x$subject[1], '-', x$sample[1], '.png')), 
-             p, dpi = 300, width = 10, height = 7, units = 'in', create.dir = T)
-    }
-    
-    p
-  })
-  return(x)
-}
 
 remnant.plot <- suppressMessages(plotRemnant(df, args$outputDir))
-message("log: remnant plots created")
+message("remnant plots created!")
 
 # Create Gene distribution df
 gene.dist <- df %>% 
@@ -213,6 +158,7 @@ gene.dist <- df %>%
 
 # Find random Value
 if (args$species == "human") {
+  message("Using human as default species...")
   dash <- readRDS(file = "reference/hg38.dash.rds")
 } else if (args$species == "mice") {
   dash <- readRDS(file = "reference/mm9.dash.rds")
@@ -221,7 +167,11 @@ if (args$species == "human") {
 )
 
 # Create report
+message("knitting reports...")
+
 rmarkdown::render("AAV_report.Rmd",
                   output_dir = args$outputDir, output_file = paste0(args$reportTitle, ".pdf"),
                   params = list('date'  = format(Sys.Date(), format="%B %d, %Y"),
                                 'title' = args$reportTitle))
+
+message("done")
