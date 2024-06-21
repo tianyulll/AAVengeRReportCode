@@ -123,18 +123,15 @@ read_data <- function(file) {
 
 # calculate length from rearrangement (repLeaderSeqMap column)
 getRearrangeLength <- function(x) {
-  if (!grepl(";", x)) {
+  if (is.na(x)) {
     return(0)
-  } else {
-    matches <- str_match_all(x, "\\.\\.(\\d+)\\[")
-    values <- unlist(matches)
-    last_value <- tail(values, n=1)
-    return(as.numeric(last_value))
   }
+  matches <- str_match_all(x, "\\.\\.(\\d+)\\[")
+  values <- unlist(matches)
+  last_value <- tail(values, n=1)
+  return(as.numeric(last_value))
 }
 
-## version 1 
-## no rearrangment sites are skipped
 getRearrangeDf <- function(df) {
   
   o <- df %>% 
@@ -142,20 +139,55 @@ getRearrangeDf <- function(df) {
     mutate(breaks = str_count(repLeaderSeqMap, ";")) %>%
     mutate(breaks = ifelse(is.na(breaks), 0, breaks)) %>% 
     mutate(boolBreak = ifelse(breaks == 0, 0, 1)) %>%
+    mutate(count = 1) %>%
     mutate(rearrangeLength = sapply(repLeaderSeqMap, getRearrangeLength)) %>%
     group_by(sample) %>%
-    summarise(totalBreaks = sum(breaks),
+    summarise(totalBreaks = sum(breaks), totalSites = sum(count),
               totalLength = sum(rearrangeLength), totalBreakBool = sum(boolBreak)) %>% 
-    mutate("break%" = round(totalBreaks / totalLength*100, 2),
-           "breakBool%" = round(totalBreakBool / totalLength*100, 2))
+    mutate("break\u2030/length" = round(totalBreaks / totalLength*1000, 2),
+           "breakBool\u2030/length" = round(totalBreakBool / totalLength*1000, 2),
+           "break%/count" = round(totalBreaks / totalSites * 100, 2),
+           "breakBool%/count" = round(totalBreakBool / totalSites * 100, 2)) %>%
+    select(-totalBreaks, -totalSites, -totalLength, -totalBreakBool)
   
   return(o)
 }
 
-## run a summary on aavenger output df
-# getSummary <- function(df) {
-#   
-# }
+plotRearrangment <- function(df) {
+  
+  p <- ggplot(df, aes(x = sample, y = `breakBool%/count`, fill = sample)) +
+        geom_bar(stat = "identity") +
+        scale_y_continuous(expand = c(0, 0), limits = c(0,100)) +
+        scale_fill_manual( values = colorRampPalette(brewer.pal(9, "Set1"))(length(unique(df$sample))) ) +
+        labs( x = "", y = "") +
+        ggtitle("Percentage of Boolean Breaks over Sites per Sample") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+              panel.background = element_blank(),
+              panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(color = "black", linewidth = 0.2), 
+              legend.position = "none",
+              plot.title = element_text(hjust = 0.5))
+  
+  return(p)
+}
+
+# run a summary on aavenger output df
+getSummary <- function(df, meta) {
+  
+  o <- df %>% 
+    select(trial, subject, sample, sonicLengths, reads) %>%
+    mutate(count = 1) %>%
+    group_by(sample, subject) %>%
+    summarize(ChaoLengths = list(sonicLengths),"total reads" = sum(reads), 
+              "Unique Sites" = sum(count), "inferred cell" = sum(sonicLengths)) %>%
+    mutate("Chao1" = vegan::estimateR(unlist(ChaoLengths))["S.chao1"]) %>%
+    select(- ChaoLengths) %>%
+    dplyr::rename(patientID = subject) %>%
+    left_join(y = meta, by = "sample")
+  
+  return(summary)
+}
 
 ## run a summary of rearrangement
 

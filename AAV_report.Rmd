@@ -99,6 +99,12 @@ if(nrow(rearrangement) > 0) {
 }
 ```
 
+```{r rearrangePlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=4}
+
+print(rearrangePlot)
+
+```
+
 \newpage
 
 # AAV ITR Breakpoint Plots

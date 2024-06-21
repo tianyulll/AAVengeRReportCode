@@ -18,7 +18,9 @@ parser$add_argument("--piNote", help = "path to text file for summary notes")
 parser$add_argument("-m", "--meta", help = "path to meta data table, must have column sample and info")
 parser$add_argument("--species", default = "human", required = F, help = "choose from human or mice")
 parser$add_argument("-f", "--filter", required = F,  help = "only keep sites with reads greater than this threshold")
-parser$add_argument("--saveimg", action = 'store_true', help = "if provided, plots will NOT be saved separately")
+parser$add_argument("--saveimg", action = 'store_true', help = "if provided, plots will be saved separately as png")
+parser$add_argument("--savetsv", action = 'store_true', help = "if provided, tables will be saved separately as tsv")
+
 
 # these parameters will be removed in future versions
 parser$add_argument("--itrStart", type="integer", default = 57, help = "itr seq start position for remnant plot")
@@ -80,6 +82,7 @@ df <- df %>%
 # Make rearrangment summary
 rearrangement <- getRearrangeDf(df)
 
+rearrangePlot <- plotRearrangment(rearrangement)
 
 # Create abundance plot with top 10 most abundant site
 abundance <- df %>%
@@ -154,6 +157,22 @@ gene.dist <- df %>%
   unique() %>%
   left_join(y = meta.summary, by = "sample") %>%
   arrange(sample)
+
+if (args$savetsv) {
+  
+  message("saving tables...")
+  
+  tableDir = file.path(args$outputDir, "tables")
+  if (!file.exists(tableDir)) {
+    dir.create(tableDir)
+    message(paste("Directory created", tableDir))
+  }
+  
+  write.table(summary, sep = '\t', row.names = F, quote = F,
+              file = file.path(tableDir, "summaryTable.tsv"))
+  write.table(rearrangement, sep = '\t', row.names = F, quote = F,
+              file = file.path(tableDir, "rearrangementTable.tsv"))
+}
 
 
 # Find random Value
