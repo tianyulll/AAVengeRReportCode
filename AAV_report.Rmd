@@ -21,11 +21,8 @@ output:
 
 ```{r loading, echo=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
-library(RColorBrewer)
 library(dplyr)
 library(kableExtra)
-library(argparse)
-library(GenomicRanges)
 
 options(tinytex.tlmgr_update = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
@@ -61,8 +58,8 @@ PMID:22238265.
 Under most circumstances, only a subset of sites will be sampled. We thus include an estimate of sample size based on the frequency of isolation information from the SonicLength method (Berry, 2012). The ‘S.chao1’ column denotes the estimated lower bound for population size derived using Chao estimate (Chao, 1987).
 
 ```{r summaryTable, echo=FALSE}
-if(nrow(summary) > 0) {
-  kable(summary, "latex",  linesep = "", booktabs = T, caption = "integration summary table") %>%
+if(nrow(df.summary) > 0) {
+  kable(df.summary, "latex",  linesep = "", booktabs = T, caption = "integration summary table") %>%
     kable_styling(latex_options = c("hold_position", "scale_down"))
 } else {
   print("error making summary table")
@@ -78,7 +75,7 @@ Stacked bar plots indicate clonal abundance frequency. Only the top 10 clonal ty
 ```{r abundantPlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=4.5, fig.width=4}
 
 
-for (i in abundantPlot) {
+for (i in abundancePlots) {
   print(i)
 }
 
@@ -91,8 +88,8 @@ for (i in abundantPlot) {
 This is a summary table for itr breakpoints. 
 
 ```{r breakSummary, echo=FALSE}
-if(nrow(rearrangement) > 0) {
-  kable(rearrangement, "latex",  linesep = "", booktabs = T, caption = "Rearrangement Summary Table") %>%
+if(nrow(df.rearrangement) > 0) {
+  kable(df.rearrangement, "latex",  linesep = "", booktabs = T, caption = "Rearrangement Summary Table") %>%
     kable_styling(latex_options = c("hold_position", "scale_down"))
 } else {
   print("error making summary table for breaks")
@@ -113,7 +110,7 @@ These plots are a visual representation of the ITR breakpoint at the site of gen
 
 ```{r itrPlots, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.align='center',results='asis', fig.width=9.5, dev='cairo_pdf'}
  
-for (i in remnant.plot){ 
+for (i in remnantPlots){ 
   print(i)
 }
 
@@ -126,14 +123,12 @@ for (i in remnant.plot){
 The plot below details the % of integration sites within two features, 'in genes' and 'in Exons', summarized per sample. 'in Genes' refers to sites within transcription unit boundaries and 'in Exons' refers to sites within exon boundaries. 
 
 ```{r geneTable, echo=FALSE, message=FALSE, warning=FALSE}
-if(nrow(gene.dist) > 0) {
-  tmp <- gene.dist %>% 
-    select(-description) %>%
-    relocate(info, .after = sample)
+if(nrow(gene.df) > 0) {
   
-  kable(tmp, "latex", linesep = "", booktabs = T, align = "c", 
+  kable(gene.df, "latex", linesep = "", booktabs = T, align = "c", 
         caption = "gene distribution percentage table") %>%
   kable_styling(latex_options = "hold_position")
+  
 } else {
   print("error making gene distribution table")
 }
@@ -141,20 +136,7 @@ if(nrow(gene.dist) > 0) {
 
 ```{r genePlot, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, fig.cap="gene distribution scatter plot"}
 
-ggplot(gene.dist, aes(y = description)) +
-  geom_point(aes(x = `In Exon%`, shape = "exon"), alpha = 0.8) +    
-  geom_point(aes(x = `In Transcription Unit%`, shape = "gene"), alpha = 0.8, size = 2) + 
-  scale_shape_manual(values = c(16, 2), labels = c("exon", "TranscriptionUnit"), name = NULL) + 
-  labs(title = "", x = "") + 
-  scale_x_continuous(labels = scales::label_percent(accuracy = .1, scale = 1), 
-                     limits = c(0, 100)) +
-  geom_vline(linetype = "dashed", aes(xintercept = dash[[1]], color = "random exon")) +
-  geom_vline(linetype = "dotted", aes(xintercept = dash[[2]], color = "random TU")) +
-  theme(axis.text = element_text(size = 10),                  
-        axis.title.y = element_blank(),
-        panel.grid.major = element_blank(),                   
-        axis.line = element_line(linewidth = 0.5),
-        legend.position = "right")
+print(gene.plot)
 
 ```
 
