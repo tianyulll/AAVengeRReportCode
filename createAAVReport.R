@@ -70,16 +70,24 @@ message("remnant plots created!")
 ## Find random Value
 if (args$species == "human") {
   message("Using human as default species...")
-  dash <- readRDS(file = "reference/hg38.dash.rds")
+  randomParam <- readRDS(file = "data/hg38.random1000.rds")
 } else if (args$species == "mice") {
-  dash <- readRDS(file = "reference/mm9.dash.rds")
-} else (
+  randomParam <- readRDS(file = "data/mm9.random1000.rds")
+} else if (args$species == "yeast") {
+  randomParam <- readRDS(file = "data/sacCer3.random1000.rds")
+} else if (args$species == "dog") {
+  randomParam <- readRDS(file = "data/canFam3.random1000.rds")
+} else {
   stop("provided species is not included in reference")
-)
+}
+
 
 gene.df <- aavAnalysis::getGeneDf(df)
-gene.plot <- aavAnalysis::plotRandomGene(df = gene.df,
-                                         random_exon = dash[[1]], random_tu = dash[[2]])
+gene.plot <- aavAnalysis::plotRandomGene(df = gene.df, exon_mean = randomParam$inExon_mean, 
+                                         exon_sd = randomParam$inExon_SD,
+                                         tu_mean = randomParam$inTU_mean, tu_sd = randomParam$inTU_SD)
+
+
 
 ## saving tables separately?
 if (args$savetsv) {

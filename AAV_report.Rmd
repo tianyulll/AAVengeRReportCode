@@ -96,7 +96,9 @@ if(nrow(df.rearrangement) > 0) {
 }
 ```
 
-```{r rearrangePlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=4}
+\newpage
+
+```{r rearrangePlot, echo=FALSE, message=FALSE, warning=FALSE,fig.height=8}
 
 print(rearrangePlot)
 
@@ -121,6 +123,7 @@ for (i in remnantPlots){
 # Gene distribution dot plots
 
 The plot below details the % of integration sites within two features, 'in genes' and 'in Exons', summarized per sample. 'in Genes' refers to sites within transcription unit boundaries and 'in Exons' refers to sites within exon boundaries. 
+`r randomParam$sampleSize` were drawn for `r randomParam$nSamplesDrawn` times from the species of interest. The mean and standard deviation were estimated for these sites overlapping the "in exon" and "in transcription" sites of the species of interest. The mean was shown as a dashed line, and the standard deviation were shaded accordingly.
 
 ```{r geneTable, echo=FALSE, message=FALSE, warning=FALSE}
 if(nrow(gene.df) > 0) {
